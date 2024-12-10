@@ -4,6 +4,8 @@
 
 This project automates the deployment and management of AWS infrastructure using Terraform and Jenkins. It creates various AWS resources including a Virtual Private Cloud (VPC), public and private subnets, NAT gateways, load balancers, and Route 53 DNS records. The Jenkins pipeline automates the process of deploying the infrastructure to different environments (dev, staging, and prod).
 
+![My Image](AWS_INFRA.png)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following software installed:
