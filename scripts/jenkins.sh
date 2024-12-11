@@ -1,48 +1,106 @@
 #!/bin/bash
 
-# Ensure Terraform is installed
-terraform --version
+# Set strict mode for better error handling
+set -euo pipefail
 
-# Function to initialize Terraform
-init() {
-    echo "Initializing Terraform..."
-    terraform init
+# Log file for tracking script execution
+LOG_FILE="/var/log/jenkins/terraform_deployment.log"
+
+# Ensure log directory exists
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# Function to log messages
+log_message() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# Function to run terraform plan
-plan() {
-    echo "Running Terraform Plan..."
-    terraform plan -out=tfplan
+# Function to handle errors
+error_exit() {
+    log_message "ERROR: $1"
+    exit 1
 }
 
-# Function to apply terraform plan
-apply() {
-    echo "Applying Terraform configuration..."
-    terraform apply -auto-approve tfplan
+# Function to validate Terraform configuration
+validate_terraform() {
+    log_message "Validating Terraform configuration..."
+    terraform validate || error_exit "Terraform validation failed"
 }
 
-# Function to destroy terraform infrastructure
-destroy() {
-    echo "Destroying Terraform infrastructure..."
-    terraform destroy -auto-approve
+# Initialize Terraform
+init_terraform() {
+    log_message "Initializing Terraform..."
+    terraform init \
+        -input=false \
+        -backend=true \
+        || error_exit "Terraform initialization failed"
 }
 
-# Choose the correct function based on the script argument
-case "$1" in
-    init)
-        init
-        ;;
-    plan)
-        plan
-        ;;
-    apply)
-        apply
-        ;;
-    destroy)
-        destroy
-        ;;
-    *)
-        echo "Usage: $0 {init|plan|apply|destroy}"
-        exit 1
-        ;;
-esac
+# Plan Terraform changes
+plan_terraform() {
+    log_message "Planning Terraform changes..."
+    terraform plan \
+        -input=false \
+        -out=tfplan \
+        || error_exit "Terraform plan failed"
+}
+
+# Apply Terraform changes
+apply_terraform() {
+    log_message "Applying Terraform changes..."
+    terraform apply \
+        -input=false \
+        -auto-approve \
+        tfplan \
+        || error_exit "Terraform apply failed"
+}
+
+# Destroy Terraform infrastructure
+destroy_terraform() {
+    log_message "Destroying Terraform infrastructure..."
+    terraform destroy \
+        -input=false \
+        -auto-approve \
+        || error_exit "Terraform destroy failed"
+}
+
+# Main script logic
+main() {
+    # Change to the directory containing Terraform files
+    cd "$(dirname "$0")/.."
+
+    # Ensure AWS credentials are available
+    if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+        error_exit "AWS credentials are not set"
+    fi
+
+    # Validate Terraform configuration first
+    validate_terraform
+
+    # Execute command based on input argument
+    case "${1:-}" in
+        "init")
+            init_terraform
+            ;;
+        "plan")
+            init_terraform
+            plan_terraform
+            ;;
+        "apply")
+            init_terraform
+            plan_terraform
+            apply_terraform
+            ;;
+        "destroy")
+            init_terraform
+            destroy_terraform
+            ;;
+        *)
+            error_exit "Usage: $0 {init|plan|apply|destroy}"
+            ;;
+    esac
+
+    log_message "Terraform operation completed successfully"
+}
+
+# Execute main function with script arguments
+main "$@"

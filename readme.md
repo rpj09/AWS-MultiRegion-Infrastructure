@@ -167,6 +167,169 @@ The Jenkins pipeline defined in `Jenkinsfile` automates the Terraform deployment
 4. **Terraform Apply**: Applies the infrastructure changes to AWS.
 5. **Terraform Destroy** (optional): Cleans up the infrastructure.
 
+
+## Jenkins Installation
+
+### Using `jenkins_installation.sh` Script
+1. Navigate to the script folder
+   ```bash
+   cd script
+   ```
+
+2. Make the script executable
+   ```bash
+   chmod +x jenkins_installation.sh
+   ```
+
+3. Run the installation script
+   ```bash
+   ./jenkins_installation.sh
+   ```
+
+## Jenkins Pipeline Configuration
+
+### Step 1: Plugin Installation
+Install the following Jenkins plugins:
+- Pipeline
+- Git
+- Credentials Binding
+- AWS Credentials Plugin
+
+#### Installation Process
+1. Go to **Manage Jenkins > Manage Plugins**
+2. Click **Available** tab
+3. Search and select the required plugins
+4. Click **Install without restart**
+
+### Step 2: AWS Credentials Configuration
+1. Go to **Manage Jenkins > Manage Credentials**
+2. Click **System > Global credentials (unrestricted)**
+3. Click **Add Credentials**
+4. Select **AWS Credentials**
+   - **AWS Access Key ID**: Enter your AWS access key
+   - **AWS Secret Access Key**: Enter your AWS secret key
+   - **ID**: Provide a unique identifier (e.g., `aws-terraform-credentials`)
+5. Click **OK**
+
+### Step 3: Create Pipeline Job
+1. Click **New Item**
+2. Enter job name (e.g., `Terraform-Infrastructure`)
+3. Select **Pipeline**
+4. Click **OK**
+
+### Step 4: Pipeline Configuration
+1. In **General** section:
+   - Check **GitHub project**
+   - Enter repository URL
+
+2. In **Build Triggers**:
+   - Select **GitHub hook trigger for GITScm polling**
+   - Or **Poll SCM** with a schedule (optional)
+
+3. In **Pipeline** section:
+   - Select **Pipeline script from SCM**
+   - Choose **Git** as SCM
+   - Enter repository URL
+   - Select credentials
+   - Set branch (e.g., `*/main`)
+   - Set **Script Path** to `Jenkinsfile`
+
+## Jenkins Script (`jenkins_script.sh`) Configuration
+
+### Script Placement
+Place the `jenkins_script.sh` in the `jenkins/` directory of your repository.
+
+### Make Script Executable
+```bash
+chmod +x jenkins/jenkins_script.sh
+```
+
+### Script Functionality
+The script supports four main Terraform operations:
+- `init`: Initialize Terraform
+- `plan`: Create execution plan
+- `apply`: Apply infrastructure changes
+- `destroy`: Remove infrastructure
+
+### Execution in Jenkins Pipeline
+The script is called in the Jenkinsfile stages:
+```groovy
+sh './jenkins/jenkins_script.sh init'
+sh './jenkins/jenkins_script.sh plan'
+sh './jenkins/jenkins_script.sh apply'
+```
+
+## Repository Structure
+```
+your-repo/
+│
+├── Jenkinsfile
+├── jenkins/
+│   └── jenkins_script.sh
+├── script/
+│   └── jenkins_installation.sh
+├── main.tf
+├── variables.tf
+└── ... (other Terraform files)
+```
+
+## Initial Setup Checklist
+- [ ] Jenkins installed
+- [ ] Necessary plugins installed
+- [ ] AWS credentials configured
+- [ ] Pipeline job created
+- [ ] Repository connected
+- [ ] `jenkins_script.sh` made executable
+
+<!--
+## Dockerized Terraform Deployment
+
+### AWS Configuration File
+Create `aws-config.env` in your project root:
+
+```env
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_DEFAULT_REGION=your-region
+```
+
+**Important**: Add `aws-config.env` to `.gitignore`
+
+### Docker Commands for Terraform
+
+#### Initialize Terraform
+```bash
+docker run --rm -it \
+    --env-file aws-config.env \
+    -v "$(pwd):/app" \
+    terraform-aws ./docker.sh init
+```
+
+#### Plan Infrastructure
+```bash
+docker run --rm -it \
+    --env-file aws-config.env \
+    -v "$(pwd):/app" \
+    terraform-aws ./docker.sh plan
+```
+
+#### Apply Infrastructure
+```bash
+docker run --rm -it \
+    --env-file aws-config.env \
+    -v "$(pwd):/app" \
+    terraform-aws ./docker.sh apply
+```
+
+#### Destroy Infrastructure
+```bash
+docker run --rm -it \
+    --env-file aws-config.env \
+    -v "$(pwd):/app" \
+    terraform-aws ./docker.sh destroy
+``` -->
+
+
 ## Troubleshooting
 
 - **Jenkins Fails to Start**: If Jenkins doesn't start after installation, check the logs using:
